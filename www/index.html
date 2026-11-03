@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>My Daily Todo</title>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--text:#1d2433;--muted:#6b7385;--accent:#4f46e5;--danger:#dc2626;--ok:#16a34a;--line:#e5e7ef;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10131c;--card:#1a1f2d;--text:#eef0f6;--muted:#9aa2b5;--accent:#818cf8;--danger:#f87171;--ok:#4ade80;--line:#2a3144;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#10131c;--card:#1a1f2d;--text:#eef0f6;--muted:#9aa2b5;--accent:#818cf8;--danger:#f87171;--ok:#4ade80;--line:#2a3144;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0 auto;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;max-width:560px;padding:16px 16px 90px}
+.top{display:flex;justify-content:space-between;align-items:center}
+h1{font-size:22px;margin:4px 0}
+.sub{color:var(--muted);font-size:14px}
+#gear{background:none;border:0;font-size:24px;cursor:pointer;color:var(--text)}
+input,select,textarea{font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;width:100%}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:14px;display:flex;flex-direction:column;gap:8px}
+.row{display:flex;gap:8px}
+.g3{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:8px}
+.btn{font:inherit;border:0;border-radius:10px;padding:10px 16px;background:var(--accent);color:#fff;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--line)}
+.btn.red{background:var(--danger)}
+.tabs{display:flex;gap:8px;margin:18px 0 10px}
+.tab{flex:1;font:inherit;font-weight:600;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--muted);cursor:pointer}
+.tab.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.task{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
+.task input[type=checkbox]{width:26px;height:26px;accent-color:var(--accent);flex:none}
+.t{flex:1;min-width:0;cursor:pointer}
+.t b{font-weight:500;word-break:break-word}
+.d{font-size:12px;color:var(--muted);margin-top:2px}
+.over .d{color:var(--danger);font-weight:600}
+.today .d{color:var(--accent);font-weight:600}
+.done .t b{text-decoration:line-through;color:var(--muted)}
+.ct{font-size:12px;color:var(--ok);margin-top:2px;font-weight:600}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+.dot.h{background:var(--danger)}.dot.m{background:#f59e0b}.dot.l{background:var(--ok)}
+.empty{color:var(--muted);text-align:center;padding:18px;font-size:14px}
+label{font-size:13px;color:var(--muted)}
+#set{display:none}#set.open{display:flex}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:50}
+.ov.show{display:flex}
+.box{background:var(--card);border-radius:18px;padding:20px;width:100%;max-width:440px;max-height:85vh;overflow:auto;display:flex;flex-direction:column;gap:8px}
+.box h3{margin:0;font-size:22px}
+.box li{margin:6px 0;font-size:15px}
+.tag{font-size:12px;font-weight:700;padding:1px 7px;border-radius:99px;margin-left:6px;color:#fff}
+.tag.o{background:var(--danger)}.tag.t2{background:var(--accent)}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:#222;color:#fff;border-radius:12px;padding:10px 16px;display:none;gap:14px;align-items:center;z-index:60}
+#toast.show{display:flex}
+#toast button{background:none;border:0;color:#a5b4fc;font:inherit;font-weight:700;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="top"><div><h1>✅ My Daily Todo</h1><div class="sub" id="today"></div></div><button id="gear" aria-label="Settings">⚙️</button></div>
+<div class="sub" id="sum" style="margin-top:6px;font-weight:600"></div>
+
+<div class="card">
+  <div class="row"><input id="txt" placeholder="Add a task…" maxlength="200"><button class="btn" id="addBtn" aria-label="Add">＋</button></div>
+  <div class="g3">
+    <input id="due" type="date" aria-label="Deadline">
+    <select id="pri" aria-label="Priority"><option value="h">🔴 High</option><option value="m" selected>🟡 Medium</option><option value="l">🟢 Low</option></select>
+    <select id="rep" aria-label="Repeat"><option value="">No repeat</option><option value="d">Daily</option><option value="w">Weekly</option><option value="m">Monthly</option></select>
+  </div>
+</div>
+
+<div class="tabs"><button class="tab on" data-tab="p" id="tp">Pending</button><button class="tab" data-tab="c" id="td">Done</button></div>
+<div id="list"></div>
+<button class="btn ghost" id="showM" style="width:100%;margin-top:6px">Show morning list</button>
+
+<div class="card" id="set">
+  <b>🔔 Reminders</b>
+  <label for="iv">Remind me every</label>
+  <select id="iv"><option value="0">Off</option><option value="2">2 hours</option><option value="3">3 hours</option><option value="4">4 hours</option><option value="5">5 hours</option><option value="6">6 hours</option><option value="12">12 hours</option><option value="18">18 hours</option><option value="24">24 hours</option></select>
+  <label for="snd">Tune</label>
+  <select id="snd"><option value="loud">Ringing tune (loud pop-up)</option><option value="soft">Soft notification tune</option><option value="silent">Silent</option></select>
+  <label for="msg">Message</label>
+  <input id="msg" maxlength="60" placeholder="Work pending">
+  <div class="row"><button class="btn" id="notif">Enable notifications</button><button class="btn ghost" id="test">Test</button></div>
+  <div class="sub">Tasks with a deadline also remind you at 9:00 AM on that day (Android app).</div>
+  <b style="margin-top:8px">💾 Backup</b>
+  <textarea id="bk" rows="3" placeholder="Backup text appears here. To restore, paste it here."></textarea>
+  <div class="row"><button class="btn ghost" id="bkc">Copy backup</button><button class="btn ghost" id="bkr">Restore</button></div>
+</div>
+
+<div class="ov" id="morning"><div class="box">
+  <h3 id="mh">Good morning ☀️</h3><div class="sub" id="ms"></div><div id="ml"></div>
+  <button class="btn" id="mok">Let’s start the day</button>
+</div></div>
+
+<div class="ov" id="ed"><div class="box">
+  <h3>Edit task</h3>
+  <input id="et" maxlength="200" aria-label="Task">
+  <div class="g3"><input id="edd" type="date" aria-label="Deadline"><select id="ep"><option value="h">🔴 High</option><option value="m">🟡 Medium</option><option value="l">🟢 Low</option></select><select id="er"><option value="">No repeat</option><option value="d">Daily</option><option value="w">Weekly</option><option value="m">Monthly</option></select></div>
+  <div class="row"><button class="btn" id="es" style="flex:1">Save</button><button class="btn ghost" id="ec">Cancel</button><button class="btn red" id="edel">Delete</button></div>
+</div></div>
+<div id="toast"><span id="tm"></span><button id="tu">Undo</button></div>
+
+<script>
+const KEY="dailyTodo.v1",SEEN="dailyTodo.seen",SKEY="dailyTodo.settings";
+let tasks=[],tab="p",edit=null,undo=null,S={iv:0,snd:"loud",msg:"Work pending"},tt;
+const $=id=>document.getElementById(id);
+const PR={h:0,m:1,l:2},RL={d:"Daily",w:"Weekly",m:"Monthly"};
+try{tasks=JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){}
+try{S=Object.assign(S,JSON.parse(localStorage.getItem(SKEY)||"{}"))}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(tasks))}catch(e){}sched()}
+function ymd(d){const p=n=>String(n).padStart(2,"0");return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())}
+const todayStr=()=>ymd(new Date());
+function fmt(s){const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"})}
+function esc(s){return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function status(t){if(!t.due)return"";const n=todayStr();return t.due<n?"over":t.due===n?"today":""}
+function dueText(t){if(!t.due)return"No deadline";const s=status(t);return s==="over"?"Overdue · "+fmt(t.due):s==="today"?"Due today":"Due "+fmt(t.due)}
+function sortP(a,b){const x=a.due||"9999",y=b.due||"9999";if(x!==y)return x<y?-1:1;return(PR[a.pri||"m"]-PR[b.pri||"m"])||a.id-b.id}
+function dur(ms){const m=Math.round(ms/60000);if(m<1)return"under 1 min";const d=Math.floor(m/1440),h=Math.floor(m%1440/60),n=m%60;return[d?d+"d":"",h?h+"h":"",n?n+"m":""].filter(Boolean).join(" ")}
+function nextDue(t){let [y,m,d]=(t.due||todayStr()).split("-").map(Number),x=new Date(y,m-1,d);do{t.rep==="d"?x.setDate(x.getDate()+1):t.rep==="w"?x.setDate(x.getDate()+7):x.setMonth(x.getMonth()+1)}while(ymd(x)<=todayStr());return ymd(x)}
+const pendingN=()=>tasks.filter(t=>!t.done).length;
+
+function render(){
+  $("today").textContent=new Date().toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"});
+  const p=tasks.filter(t=>!t.done).sort(sortP),c=tasks.filter(t=>t.done).sort((a,b)=>(b.doneAt||0)-(a.doneAt||0));
+  const dt=c.filter(t=>t.doneAt&&ymd(new Date(t.doneAt))===todayStr()).length;
+  $("sum").textContent=p.length+" pending · "+dt+" done today";
+  $("tp").textContent="Pending "+p.length;$("td").textContent="Done "+c.length;
+  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
+  const l=tab==="p"?p:c;
+  $("list").innerHTML=l.length?l.map(row).join(""):'<div class="empty">'+(tab==="p"?"No pending work 🎉":"Nothing completed yet")+'</div>';
+}
+function row(t){
+  return '<div class="task '+(t.done?"done":status(t))+'"><input type="checkbox" '+(t.done?"checked":"")+' data-id="'+t.id+'" aria-label="Complete task"><div class="t" data-edit="'+t.id+'"><b>'+esc(t.text)+'</b><div class="d">'+(t.done?"":'<i class="dot '+(t.pri||"m")+'"></i>')+dueText(t)+(t.rep?" · 🔁 "+RL[t.rep]:"")+'</div>'+(t.done&&t.doneAt?'<div class="ct">✔ Completed in '+dur(t.doneAt-t.id)+' · '+new Date(t.doneAt).toLocaleString(undefined,{day:"numeric",month:"short",hour:"numeric",minute:"2-digit"})+'</div>':'')+'</div></div>';
+}
+document.addEventListener("change",e=>{
+  const id=e.target.dataset&&e.target.dataset.id;if(!id)return;
+  const t=tasks.find(t=>t.id==id);if(!t)return;
+  t.done=e.target.checked;t.doneAt=t.done?Date.now():null;
+  if(t.done&&t.rep)tasks.push({id:Date.now()+Math.floor(Math.random()*1000),text:t.text,due:nextDue(t),pri:t.pri,rep:t.rep,done:false});
+  save();render();
+});
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-edit]");if(b)openEdit(b.dataset.edit);
+  const g=e.target.closest(".tab");if(g){tab=g.dataset.tab;render()}
+});
+function add(){
+  const v=$("txt").value.trim();if(!v)return $("txt").focus();
+  tasks.push({id:Date.now()+Math.floor(Math.random()*1000),text:v,due:$("due").value,pri:$("pri").value,rep:$("rep").value,done:false});
+  $("txt").value="";$("due").value="";$("rep").value="";$("pri").value="m";tab="p";save();render();$("txt").focus();
+}
+$("addBtn").onclick=add;
+$("txt").addEventListener("keydown",e=>{if(e.key==="Enter")add()});
+
+function toast(m,u){$("tm").textContent=m;$("tu").style.display=u?"":"none";$("toast").classList.add("show");clearTimeout(tt);tt=setTimeout(()=>$("toast").classList.remove("show"),5000)}
+$("tu").onclick=()=>{if(undo){tasks.push(undo);undo=null;save();render()}$("toast").classList.remove("show")};
+function openEdit(id){const t=tasks.find(t=>t.id==id);if(!t)return;edit=t;$("et").value=t.text;$("edd").value=t.due||"";$("ep").value=t.pri||"m";$("er").value=t.rep||"";$("ed").classList.add("show")}
+$("es").onclick=()=>{const v=$("et").value.trim();if(v){edit.text=v;edit.due=$("edd").value;edit.pri=$("ep").value;edit.rep=$("er").value;save();render()}$("ed").classList.remove("show")};
+$("ec").onclick=()=>$("ed").classList.remove("show");
+$("edel").onclick=()=>{tasks=tasks.filter(t=>t!==edit);undo=edit;save();render();$("ed").classList.remove("show");toast("Task deleted",true)};
+
+function morning(){
+  const p=tasks.filter(t=>!t.done).sort(sortP),h=new Date().getHours();
+  $("mh").textContent=h<12?"Good morning ☀️":h<17?"Good afternoon 🌤️":"Good evening 🌙";
+  $("ms").textContent=p.length?"You have "+p.length+" pending task"+(p.length>1?"s":""):"All clear! No pending work 🎉";
+  $("ml").innerHTML=p.length?"<ul>"+p.map(t=>{const s=status(t);return"<li>"+esc(t.text)+(s==="over"?'<span class="tag o">Overdue</span>':s==="today"?'<span class="tag t2">Today</span>':t.due?' <span style="color:var(--muted);font-size:12px">('+fmt(t.due)+')</span>':"")+"</li>"}).join("")+"</ul>":"";
+  $("morning").classList.add("show");
+}
+$("mok").onclick=()=>{$("morning").classList.remove("show");try{localStorage.setItem(SEEN,todayStr())}catch(e){}};
+$("showM").onclick=morning;
+function checkMorning(){let s="";try{s=localStorage.getItem(SEEN)||""}catch(e){}if(s!==todayStr()&&!$("morning").classList.contains("show"))morning()}
+
+$("gear").onclick=()=>$("set").classList.toggle("open");
+$("iv").value=S.iv;$("snd").value=S.snd;$("msg").value=S.msg;
+const LN=(window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.LocalNotifications)||null;
+function saveS(){S.iv=+$("iv").value;S.snd=$("snd").value;S.msg=$("msg").value.trim()||"Work pending";try{localStorage.setItem(SKEY,JSON.stringify(S))}catch(e){}sched()}
+["iv","snd","msg"].forEach(i=>$(i).addEventListener("change",saveS));
+function tune(){if(S.snd==="silent")return;try{const a=new(window.AudioContext||window.webkitAudioContext)(),soft=S.snd==="soft",seq=soft?[660,880]:[880,660,880,660,880,660,880],g=soft?.35:.25;seq.forEach((f,i)=>{const o=a.createOscillator(),v=a.createGain(),s=a.currentTime+i*g;o.frequency.value=f;o.connect(v);v.connect(a.destination);v.gain.setValueAtTime(.0001,s);v.gain.exponentialRampToValueAtTime(.4,s+.03);v.gain.exponentialRampToValueAtTime(.0001,s+g-.03);o.start(s);o.stop(s+g)})}catch(e){}try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}}
+function fire(){const n=pendingN();if(!n)return;tune();try{if("Notification" in window&&Notification.permission==="granted")new Notification("📋 "+S.msg,{body:n+" task"+(n>1?"s":"")+" waiting for you"})}catch(e){}}
+let lastN=Date.now();try{lastN=+localStorage.getItem("dailyTodo.lastN")||lastN}catch(e){}
+setInterval(()=>{if(LN||!S.iv||!pendingN())return;if(Date.now()-lastN>=S.iv*36e5){lastN=Date.now();try{localStorage.setItem("dailyTodo.lastN",lastN)}catch(e){}fire()}},30000);
+async function chan(){await LN.createChannel({id:"c_"+S.snd,name:"Work reminders ("+S.snd+")",importance:S.snd==="loud"?5:S.snd==="soft"?3:2,vibration:S.snd!=="silent"})}
+async function sched(){
+  if(!LN)return;
+  try{
+    const p=await LN.getPending();if(p.notifications.length)await LN.cancel(p);
+    if(!pendingN())return;await chan();const ch="c_"+S.snd,list=[];
+    if(S.iv){const c=Math.min(60,Math.ceil(168/S.iv));for(let i=1;i<=c;i++)list.push({id:i,title:"📋 "+S.msg,body:"Open your Todo list and finish pending tasks",schedule:{at:new Date(Date.now()+i*S.iv*36e5),allowWhileIdle:true},channelId:ch})}
+    let k=0;for(const t of tasks.filter(t=>!t.done&&t.due&&t.due>=todayStr()).slice(0,40)){const [y,m,d]=t.due.split("-").map(Number),at=new Date(y,m-1,d,9,0);if(at>new Date())list.push({id:1000+k++,title:"⏰ Due today",body:t.text,schedule:{at,allowWhileIdle:true},channelId:ch})}
+    if(list.length)await LN.schedule({notifications:list});
+  }catch(e){}
+}
+$("notif").onclick=async()=>{try{const r=LN?(await LN.requestPermissions()).display:await Notification.requestPermission();$("notif").textContent=r==="granted"?"Notifications on ✓":"Notifications blocked";sched()}catch(e){$("notif").textContent="Not supported"}};
+$("test").onclick=async()=>{try{if(LN){await chan();await LN.schedule({notifications:[{id:999,title:"📋 "+S.msg,body:"Test reminder",schedule:{at:new Date(Date.now()+3000)},channelId:"c_"+S.snd}]})}else{tune();if(Notification.permission==="granted")new Notification("📋 "+S.msg,{body:"Test reminder"})}}catch(e){}};
+
+$("bkc").onclick=()=>{const s=JSON.stringify(tasks);$("bk").value=s;$("bk").select();try{navigator.clipboard.writeText(s).catch(()=>document.execCommand("copy"))}catch(e){try{document.execCommand("copy")}catch(x){}}toast("Backup copied – save it in Notes or WhatsApp")};
+$("bkr").onclick=()=>{try{const a=JSON.parse($("bk").value);if(!Array.isArray(a))throw 0;tasks=a;save();render();toast("Restored "+a.length+" tasks")}catch(e){toast("Backup text is not valid")}};
+
+render();checkMorning();sched();
+document.addEventListener("visibilitychange",()=>{if(!document.hidden){render();checkMorning()}});
+</script>
+</body>
+</html>
